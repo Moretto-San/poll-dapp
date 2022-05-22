@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { React, useState, useEffect } from 'react';
 import { ethers, utils, BigNumber } from "ethers";
 import abi from "./contracts/Poll.json";
 
@@ -194,7 +194,7 @@ function App() {
         {error && <p className="text-2xl text-red-700">{error}</p>}
         <div className="mt-5">
           {currentPollName === "" && isPollOwner ?
-            <p>"Setup the name of your poll." </p> :
+            <p>Setup the name of your poll.</p> :
             <p className="text-3xl font-bold">{currentPollName}</p>
           }
         </div>
