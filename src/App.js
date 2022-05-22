@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
-import { ethers, utils } from "ethers";
-import abi from "./contracts/Bank.json";
+import { ethers, utils, BigNumber } from "ethers";
+import abi from "./contracts/Poll.json";
 
 function App() {
   const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [isBankerOwner, setIsBankerOwner] = useState(false);
-  const [inputValue, setInputValue] = useState({ withdraw: "", deposit: "", bankName: "" });
-  const [bankOwnerAddress, setBankOwnerAddress] = useState(null);
-  const [customerTotalBalance, setCustomerTotalBalance] = useState(null);
-  const [currentBankName, setCurrentBankName] = useState(null);
+  const [isPollOwner, setIsPollOwner] = useState(false);
+  const [inputValue, setInputValue] = useState({ withdraw: "", deposit: "", pollName: "", newPollItem:"" , pollItem:""});
+  const [pollOwnerAddress, setPollOwnerAddress] = useState(null);  
+  const [pollItens, setPollItens] = useState(null);  
+  const [currentPollName, setCurrentPollName] = useState(null);
   const [customerAddress, setCustomerAddress] = useState(null);
   const [error, setError] = useState(null);
 
-  const contractAddress = '0x02C07E88691d9497bb9206A2Ea54a12Cd087B459';
+  const contractAddress = '0xAba7976cCE818A18609590E334B0E16C32682e65';
   const contractABI = abi.abi;
 
   const checkIfWalletIsConnected = async () => {
@@ -24,7 +24,7 @@ function App() {
         setCustomerAddress(account);
         console.log("Account Connected: ", account);
       } else {
-        setError("Please install a MetaMask wallet to use our bank.");
+        setError("Please install a MetaMask wallet to use our poll.");
         console.log("No Metamask detected");
       }
     } catch (error) {
@@ -32,89 +32,149 @@ function App() {
     }
   }
 
-  const getBankName = async () => {
+  const getPollName = async () => {
     try {
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const bankContract = new ethers.Contract(contractAddress, contractABI, signer);
+        const pollContract = new ethers.Contract(contractAddress, contractABI, signer);
   
-        let bankName = await bankContract.bankName();
-        bankName = utils.parseBytes32String(bankName);
-        setCurrentBankName(bankName.toString());
+        let pollName = await pollContract.pollName();
+        if(pollName){
+          pollName = utils.parseBytes32String(pollName);        
+          setCurrentPollName(pollName.toString());
+        }
       } else {
         console.log("Ethereum object not found, install Metamask.");
-        setError("Please install a MetaMask wallet to use our bank.");
+        setError("Please install a MetaMask wallet to use our poll.");
       }
     } catch (error) {
       console.log(error);
     }
   }
 
-  const setBankNameHandler = async (event) => {
+  const setPollNameHandler = async (event) => {
     event.preventDefault();
     try {
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const bankContract = new ethers.Contract(contractAddress, contractABI, signer);
+        const pollContract = new ethers.Contract(contractAddress, contractABI, signer);
 
-        const txn = await bankContract.setBankName(utils.formatBytes32String(inputValue.bankName));
-        console.log("Setting Bank Name...");
+        const txn = await pollContract.setPollName(utils.formatBytes32String(inputValue.pollName));
+        console.log("Setting Poll Name...");
         await txn.wait();
-        console.log("Bank Name Changed", txn.hash);
-        await getBankName();
+        console.log("Poll Name Changed", txn.hash);
+        await getPollName();
 
       } else {
         console.log("Ethereum object not found, install Metamask.");
-        setError("Please install a MetaMask wallet to use our bank.");
+        setError("Please install a MetaMask wallet to use our poll.");
       }
     } catch (error) {
       console.log(error);
     }
   }
 
-  const getbankOwnerHandler = async () => {
+  const includePollItemHandler = async (event) => {
+    event.preventDefault();
     try {
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const bankContract = new ethers.Contract(contractAddress, contractABI, signer);
+        const pollContract = new ethers.Contract(contractAddress, contractABI, signer);
 
-        let owner = await bankContract.bankOwner();
-        setBankOwnerAddress(owner);
+        const txn = await pollContract.includePollItem(utils.formatBytes32String(inputValue.newPollItem));
+        console.log("Including Poll Item...");
+        await txn.wait();
+        console.log("Poll Item Inserted", txn.hash);
+        await getPollItensHandler();
+
+      } else {
+        console.log("Ethereum object not found, install Metamask.");
+        setError("Please install a MetaMask wallet to use our poll.");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }  
+
+  const getPollOwnerHandler = async () => {
+    try {
+      if (window.ethereum) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const pollContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        let owner = await pollContract.pollOwner();
+        setPollOwnerAddress(owner);
 
         const [account] = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
         if (owner.toLowerCase() === account.toLowerCase()) {
-          setIsBankerOwner(true);
+          setIsPollOwner(true);
         }
       } else {
         console.log("Ethereum object not found, install Metamask.");
-        setError("Please install a MetaMask wallet to use our bank.");
+        setError("Please install a MetaMask wallet to use our poll.");
       }
     } catch (error) {
       console.log(error);
     }
   }
 
-  const customerBalanceHandler = async () => {
+  const getPollItensHandler = async () => {
     try {
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
-        const bankContract = new ethers.Contract(contractAddress, contractABI, signer);
+        const pollContract = new ethers.Contract(contractAddress, contractABI, signer);
 
-        let balance = await bankContract.getCustomerBalance();
-        setCustomerTotalBalance(utils.formatEther(balance));
-        console.log("Retrieved balance...", balance);
+        let itensLength = await pollContract.getPollItemLength();
+        console.log("itensLength "+itensLength);
+
+        let concat = "";
+
+        for (let i = 0; i < itensLength; i++) {
+          let item = await pollContract.getPollItem(BigNumber.from(i));
+          console.log("item "+item);          
+          console.log("item "+utils.parseBytes32String(item));
+          let votes = await pollContract.getPollItemVotes(BigNumber.from(i));
+          console.log("votes "+votes);
+          concat = concat+"("+utils.parseBytes32String(item)+" : "+votes+" votes) ";
+        }
+        
+        setPollItens(concat);
 
       } else {
         console.log("Ethereum object not found, install Metamask.");
-        setError("Please install a MetaMask wallet to use our bank.");
+        setError("Please install a MetaMask wallet to use our poll.");
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
+    }
+  }
+
+  const voteHandler = async (event) => {
+    event.preventDefault();
+    try {
+      if (window.ethereum) {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const pollContract = new ethers.Contract(contractAddress, contractABI, signer);
+
+        const txn = await pollContract.voteItem(utils.formatBytes32String(inputValue.pollItem));
+        console.log("voting ...");
+        await txn.wait();
+        console.log("voted", txn.hash);
+        await getPollItensHandler();
+
+      } else {
+        console.log("Ethereum object not found, install Metamask.");
+        setError("Please install a MetaMask wallet to use our poll.");
+      }
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -122,74 +182,26 @@ function App() {
     setInputValue(prevFormData => ({ ...prevFormData, [event.target.name]: event.target.value }));
   }
 
-  const deposityMoneyHandler = async (event) => {
-    try {
-      event.preventDefault();
-      if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const bankContract = new ethers.Contract(contractAddress, contractABI, signer);
-
-        const txn = await bankContract.depositMoney({ value: ethers.utils.parseEther(inputValue.deposit) });
-        console.log("Deposting money...");
-        await txn.wait();
-        console.log("Deposited money...done", txn.hash);
-
-        customerBalanceHandler();
-
-      } else {
-        console.log("Ethereum object not found, install Metamask.");
-        setError("Please install a MetaMask wallet to use our bank.");
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
-  const withDrawMoneyHandler = async (event) => {
-    try {
-      event.preventDefault();
-      if (window.ethereum) {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const bankContract = new ethers.Contract(contractAddress, contractABI, signer);
-
-        let myAddress = await signer.getAddress()
-        console.log("provider signer...", myAddress);
-
-        const txn = await bankContract.withDrawMoney(myAddress, ethers.utils.parseEther(inputValue.withdraw));
-        console.log("Withdrawing money...");
-        await txn.wait();
-        console.log("Money with drew...done", txn.hash);
-
-        customerBalanceHandler();
-
-      } else {
-        console.log("Ethereum object not found, install Metamask.");
-        setError("Please install a MetaMask wallet to use our bank.");
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-
   useEffect(() => {
     checkIfWalletIsConnected();
-    getBankName();
-    getbankOwnerHandler();
-    customerBalanceHandler()
+    getPollName();
+    getPollOwnerHandler();
+    getPollItensHandler()
   }, [isWalletConnected])
 
   return (
     <main className="main-container">
-      <h2 className="headline"><span className="headline-gradient">Bank Contract Project</span> 💰</h2>
+      <h2 className="headline"><span className="headline-gradient">Poll Contract Project</span> 📊</h2>
       <section className="customer-section px-10 pt-5 pb-10">
         {error && <p className="text-2xl text-red-700">{error}</p>}
         <div className="mt-5">
-          {currentBankName === "" && isBankerOwner ?
-            <p>"Setup the name of your bank." </p> :
-            <p className="text-3xl font-bold">{currentBankName}</p>
+          {currentPollName === "" && isPollOwner ?
+            <p>"Setup the name of your poll." </p> :
+            <p className="text-3xl font-bold">{currentPollName}</p>
           }
+        </div>
+        <div className="mt-5">
+          <p><span className="font-bold">Poll itens: </span>{pollItens}</p>
         </div>
         <div className="mt-7 mb-9">
           <form className="form-style">
@@ -197,37 +209,20 @@ function App() {
               type="text"
               className="input-style"
               onChange={handleInputChange}
-              name="deposit"
-              placeholder="0.0000 ETH"
-              value={inputValue.deposit}
+              name="pollItem"
+              placeholder="Name Of The Poll Item"
+              value={inputValue.pollItem}
             />
             <button
               className="btn-purple"
-              onClick={deposityMoneyHandler}>Deposit Money In ETH</button>
-          </form>
-        </div>
-        <div className="mt-10 mb-10">
-          <form className="form-style">
-            <input
-              type="text"
-              className="input-style"
-              onChange={handleInputChange}
-              name="withdraw"
-              placeholder="0.0000 ETH"
-              value={inputValue.withdraw}
-            />
-            <button
-              className="btn-purple"
-              onClick={withDrawMoneyHandler}>
-              Withdraw Money In ETH
-            </button>
+              onClick={voteHandler}>Vote</button>
           </form>
         </div>
         <div className="mt-5">
-          <p><span className="font-bold">Customer Balance: </span>{customerTotalBalance}</p>
+          <p><span className="font-bold">Poll Contract Address: </span>{contractAddress}</p>
         </div>
         <div className="mt-5">
-          <p><span className="font-bold">Bank Owner Address: </span>{bankOwnerAddress}</p>
+          <p><span className="font-bold">Poll Owner Address: </span>{pollOwnerAddress}</p>
         </div>
         <div className="mt-5">
           {isWalletConnected && <p><span className="font-bold">Your Wallet Address: </span>{customerAddress}</p>}
@@ -237,23 +232,40 @@ function App() {
         </div>
       </section>
       {
-        isBankerOwner && (
-          <section className="bank-owner-section">
-            <h2 className="text-xl border-b-2 border-indigo-500 px-10 py-4 font-bold">Bank Admin Panel</h2>
+        isPollOwner && (
+          <section className="poll-owner-section">
+            <h2 className="text-xl border-b-2 border-indigo-500 px-10 py-4 font-bold">Poll Admin Panel</h2>
             <div className="p-10">
               <form className="form-style">
                 <input
                   type="text"
                   className="input-style"
                   onChange={handleInputChange}
-                  name="bankName"
-                  placeholder="Enter a Name for Your Bank"
-                  value={inputValue.bankName}
+                  name="pollName"
+                  placeholder="Enter a Name for Your Poll"
+                  value={inputValue.pollName}
                 />
                 <button
                   className="btn-grey"
-                  onClick={setBankNameHandler}>
-                  Set Bank Name
+                  onClick={setPollNameHandler}>
+                  Set Poll Name
+                </button>
+              </form>
+            </div>
+            <div className="p-10">
+              <form className="form-style">
+                <input
+                  type="text"
+                  className="input-style"
+                  onChange={handleInputChange}
+                  name="newPollItem"
+                  placeholder="Enter a New Item for Your Poll"
+                  value={inputValue.newPollItem}
+                />
+                <button
+                  className="btn-grey"
+                  onClick={includePollItemHandler}>
+                  Include Poll Item
                 </button>
               </form>
             </div>
