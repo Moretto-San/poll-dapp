@@ -184,7 +184,9 @@ function App() {
 
   useEffect(() => {
     checkIfWalletIsConnected();
-    getPollOwnerHandler()
+    getPollOwnerHandler();
+    getPollItensHandler();
+    getPollName()
   }, [isWalletConnected])
 
   return (
